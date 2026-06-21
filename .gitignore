@@ -3,6 +3,7 @@
 
 # Android/Gradle template gitignore
 .gradle/
+.artifacts/
 /local.properties
 /build/
 /app/build/
