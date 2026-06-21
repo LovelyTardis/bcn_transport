@@ -11,6 +11,9 @@ import com.example.wearosbarcelona.data.model.TransportType
 import com.example.wearosbarcelona.data.repository.MockTransportRepository
 import com.example.wearosbarcelona.data.repository.RealTransportRepository
 import com.example.wearosbarcelona.data.repository.TransportRepository
+import com.example.wearosbarcelona.data.repository.STATIC_METRO_STATIONS
+import com.example.wearosbarcelona.data.repository.METRO_STATION_COORDINATES
+import com.example.wearosbarcelona.data.repository.FGC_STATION_COORDINATES
 import com.example.wearosbarcelona.data.remote.TmbApiService
 import com.example.wearosbarcelona.data.remote.FgcApiService
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -88,17 +91,14 @@ class TransportViewModel : ViewModel() {
     private val _fgcArrivalsState = MutableStateFlow<UiState<StationArrivals>>(UiState.Loading)
     val fgcArrivalsState: StateFlow<UiState<StationArrivals>> = _fgcArrivalsState.asStateFlow()
 
-    var selectedMetroStation by mutableStateOf("espanya")
+    var selectedMetroStation by mutableStateOf("122")
         private set
 
     var selectedFgcStation by mutableStateOf("pl_catalunya")
         private set
 
     var metroStationsList by mutableStateOf<List<Pair<String, String>>>(
-        listOf(
-            "espanya" to "Espanya L1",
-            "universitat" to "Universitat L1"
-        )
+        STATIC_METRO_STATIONS
     )
         private set
 
@@ -160,6 +160,42 @@ class TransportViewModel : ViewModel() {
         refreshFgcArrivals()
     }
 
+    fun selectClosestStation(latitude: Double, longitude: Double, isMetro: Boolean): String? {
+        android.util.Log.d("TransportViewModel", "selectClosestStation: lat=$latitude, lon=$longitude, isMetro=$isMetro")
+        val coordinates = if (isMetro) METRO_STATION_COORDINATES else FGC_STATION_COORDINATES
+        val stationsList = if (isMetro) metroStationsList else fgcStationsList
+
+        var closestStationId: String? = null
+        var closestStationName: String? = null
+        var minDistanceSq = Double.MAX_VALUE
+
+        for (station in stationsList) {
+            val stationId = station.first
+            val coords = coordinates[stationId]
+            if (coords != null) {
+                val dLat = latitude - coords.first
+                val dLon = longitude - coords.second
+                val distSq = dLat * dLat + dLon * dLon
+                android.util.Log.v("TransportViewModel", "Station $stationId (${station.second}): distSq=$distSq")
+                if (distSq < minDistanceSq) {
+                    minDistanceSq = distSq
+                    closestStationId = stationId
+                    closestStationName = station.second
+                }
+            }
+        }
+
+        android.util.Log.d("TransportViewModel", "Selected closest: $closestStationId ($closestStationName)")
+        closestStationId?.let { id ->
+            if (isMetro) {
+                selectMetroStation(id)
+            } else {
+                selectFgcStation(id)
+            }
+        }
+        return closestStationName
+    }
+
     fun refreshMetroArrivals() {
         viewModelScope.launch {
             _metroArrivalsState.value = UiState.Loading
@@ -190,7 +226,7 @@ class TransportViewModel : ViewModel() {
             activeRepository = mockRepository
             isMockMode = true
             loadStationsList()
-            selectedMetroStation = "espanya"
+            selectedMetroStation = "122"
             selectedFgcStation = "pl_catalunya"
             refreshMetroArrivals()
             refreshFgcArrivals()
@@ -200,7 +236,7 @@ class TransportViewModel : ViewModel() {
                 activeRepository = real
                 isMockMode = false
                 loadStationsList()
-                selectedMetroStation = "espanya"
+                selectedMetroStation = "122"
                 selectedFgcStation = "pl_catalunya"
                 refreshMetroArrivals()
                 refreshFgcArrivals()

@@ -20,15 +20,44 @@ class MockTransportRepository : TransportRepository {
         "L7" to LineInfo("L7", "L7", "#795548")  // Marrón
     )
 
+    private val staticMetroStationNames = mapOf(
+        "111" to "Bellvitge",
+        "112" to "Bellvitge",
+        "113" to "Av. Carrilet",
+        "114" to "Rambla Just Oliveras",
+        "115" to "Can Serra",
+        "116" to "Florida",
+        "117" to "Torrassa",
+        "118" to "Santa Eulàlia",
+        "119" to "Mercat Nou",
+        "120" to "Plaça de Sants",
+        "121" to "Hostafrancs",
+        "122" to "Espanya",
+        "123" to "Rocafort",
+        "124" to "Urgell",
+        "125" to "Universitat",
+        "126" to "Catalunya",
+        "127" to "Urquinaona",
+        "128" to "Arc de Triomf",
+        "129" to "Marina",
+        "130" to "Glòries",
+        "131" to "Clot",
+        "132" to "Navas",
+        "133" to "La Sagrera",
+        "134" to "Fabra i Puig",
+        "135" to "Sant Andreu",
+        "136" to "Torras i Bages",
+        "137" to "Trinitat Vella",
+        "138" to "Baró de Viver",
+        "139" to "Santa Coloma",
+        "140" to "Fondo"
+    )
+
     override suspend fun getMetroArrivals(stationId: String): StationArrivals {
         delay(600)
         
         val (isClosed, nextTrainInfo) = ScheduleHelper.checkServiceStatus(TransportType.METRO, stationId)
-        val stationName = when (stationId) {
-            "espanya" -> "Espanya"
-            "universitat" -> "Universitat"
-            else -> "Estación Metro L1"
-        }
+        val stationName = staticMetroStationNames[stationId] ?: "Estación Metro L1"
 
         if (isClosed) {
             return StationArrivals(
@@ -42,25 +71,75 @@ class MockTransportRepository : TransportRepository {
         }
 
         val arrivals = mutableListOf<TrainArrival>()
-        when (stationId) {
-            "espanya" -> {
-                arrivals.add(TrainArrival(metroLines["L1"]!!, "Fondo", Random.nextInt(1, 4), "Vía 1"))
-                arrivals.add(TrainArrival(metroLines["L1"]!!, "Hospital de Bellvitge", Random.nextInt(3, 6), "Vía 2"))
-            }
-            "universitat" -> {
-                arrivals.add(TrainArrival(metroLines["L1"]!!, "Fondo", Random.nextInt(2, 4), "Vía 1"))
-                arrivals.add(TrainArrival(metroLines["L1"]!!, "Hospital de Bellvitge", Random.nextInt(1, 3), "Vía 2"))
-            }
-            else -> {
-                arrivals.add(TrainArrival(metroLines["L1"]!!, "Fondo", 3, "Vía 1"))
-            }
+        val lineL1 = metroLines["L1"]!!
+
+        // Generate simulated future timestamps (countdown style)
+        val currentMs = System.currentTimeMillis()
+        val nextTrainSecs1 = Random.nextInt(45, 180)
+        val nextTrainSecs2 = Random.nextInt(90, 300)
+        
+        if (stationId == "111") {
+            // Only towards Fondo
+            val formattedTime = "${nextTrainSecs1 / 60}m ${nextTrainSecs1 % 60}s"
+            arrivals.add(
+                TrainArrival(
+                    line = lineL1,
+                    destination = "Fondo",
+                    minutesLeft = nextTrainSecs1 / 60,
+                    secondsLeft = nextTrainSecs1 % 60,
+                    platform = "Vía 1",
+                    timeLeftFormatted = formattedTime,
+                    expectedArrivalEpochMs = currentMs + (nextTrainSecs1 * 1000L)
+                )
+            )
+        } else if (stationId == "140") {
+            // Only towards Hospital de Bellvitge
+            val formattedTime = "${nextTrainSecs2 / 60}m ${nextTrainSecs2 % 60}s"
+            arrivals.add(
+                TrainArrival(
+                    line = lineL1,
+                    destination = "Bellvitge",
+                    minutesLeft = nextTrainSecs2 / 60,
+                    secondsLeft = nextTrainSecs2 % 60,
+                    platform = "Vía 2",
+                    timeLeftFormatted = formattedTime,
+                    expectedArrivalEpochMs = currentMs + (nextTrainSecs2 * 1000L)
+                )
+            )
+        } else {
+            // Both directions: Fondo (Vía 1) and Hospital de Bellvitge (Vía 2)
+            val formattedTime1 = "${nextTrainSecs1 / 60}m ${nextTrainSecs1 % 60}s"
+            arrivals.add(
+                TrainArrival(
+                    line = lineL1,
+                    destination = "Fondo",
+                    minutesLeft = nextTrainSecs1 / 60,
+                    secondsLeft = nextTrainSecs1 % 60,
+                    platform = "Vía 1",
+                    timeLeftFormatted = formattedTime1,
+                    expectedArrivalEpochMs = currentMs + (nextTrainSecs1 * 1000L)
+                )
+            )
+            
+            val formattedTime2 = "${nextTrainSecs2 / 60}m ${nextTrainSecs2 % 60}s"
+            arrivals.add(
+                TrainArrival(
+                    line = lineL1,
+                    destination = "Bellvitge",
+                    minutesLeft = nextTrainSecs2 / 60,
+                    secondsLeft = nextTrainSecs2 % 60,
+                    platform = "Vía 2",
+                    timeLeftFormatted = formattedTime2,
+                    expectedArrivalEpochMs = currentMs + (nextTrainSecs2 * 1000L)
+                )
+            )
         }
 
         return StationArrivals(
             stationId = stationId,
             stationName = stationName,
             transportType = TransportType.METRO,
-            arrivals = arrivals.sortedBy { it.minutesLeft }.take(4)
+            arrivals = arrivals
         )
     }
 
@@ -129,10 +208,7 @@ class MockTransportRepository : TransportRepository {
 
     override suspend fun getAvailableStations(type: TransportType): List<Pair<String, String>> {
         return when (type) {
-            TransportType.METRO -> listOf(
-                "espanya" to "Espanya L1",
-                "universitat" to "Universitat L1"
-            )
+            TransportType.METRO -> STATIC_METRO_STATIONS
             TransportType.TRAIN_FGC -> listOf(
                 "pl_catalunya" to "Barcelona - Pl. Catalunya",
                 "pr" to "Provença",

@@ -47,6 +47,39 @@ class RealTransportRepository(
         return lineColors[lineCode.uppercase(Locale.getDefault())] ?: "#9E9E9E"
     }
 
+    private val staticMetroStationNames = mapOf(
+        "111" to "Bellvitge",
+        "112" to "Bellvitge",
+        "113" to "Av. Carrilet",
+        "114" to "Rambla Just Oliveras",
+        "115" to "Can Serra",
+        "116" to "Florida",
+        "117" to "Torrassa",
+        "118" to "Santa Eulàlia",
+        "119" to "Mercat Nou",
+        "120" to "Plaça de Sants",
+        "121" to "Hostafrancs",
+        "122" to "Espanya",
+        "123" to "Rocafort",
+        "124" to "Urgell",
+        "125" to "Universitat",
+        "126" to "Catalunya",
+        "127" to "Urquinaona",
+        "128" to "Arc de Triomf",
+        "129" to "Marina",
+        "130" to "Glòries",
+        "131" to "Clot",
+        "132" to "Navas",
+        "133" to "La Sagrera",
+        "134" to "Fabra i Puig",
+        "135" to "Sant Andreu",
+        "136" to "Torras i Bages",
+        "137" to "Trinitat Vella",
+        "138" to "Baró de Viver",
+        "139" to "Santa Coloma",
+        "140" to "Fondo"
+    )
+
     override suspend fun getMetroArrivals(stationId: String): StationArrivals {
         val (isClosed, nextTrainInfo) = ScheduleHelper.checkServiceStatus(TransportType.METRO, stationId)
         val stationName = getStationName(stationId, TransportType.METRO)
@@ -66,24 +99,72 @@ class RealTransportRepository(
         val lineL1 = LineInfo("L1", "L1", getColorForLine("L1"))
 
         try {
-            tmbService.getMetroLines(tmbAppId, tmbAppKey)
+            val response = tmbService.getMetroPredictions(stationId, tmbAppId, tmbAppKey)
+            val lines = response.linies ?: emptyList()
+            lines.forEach { lineInfo ->
+                val lineName = lineInfo.nom_linia ?: "L1"
+                val lineColor = lineInfo.color_linia ?: "CE1126"
+                val lineObj = LineInfo(lineName, lineName, "#$lineColor")
+
+                val stations = lineInfo.estacions ?: emptyList()
+                stations.forEach { stationInfo ->
+                    val via = stationInfo.codi_via
+                    val liniesTrajectes = stationInfo.linies_trajectes ?: emptyList()
+                    liniesTrajectes.forEach { trajecte ->
+                        val destination = trajecte.desti_trajecte ?: "Metro"
+                        val propersTrens = trajecte.propers_trens ?: emptyList()
+                        if (propersTrens.isNotEmpty()) {
+                            // Solo obtener el primero
+                            val nextTrain = propersTrens.first()
+                            val tempsArribada = nextTrain.temps_arribada
+                            if (tempsArribada != null) {
+                                val currentMs = System.currentTimeMillis()
+                                val diffMs = tempsArribada - currentMs
+                                val diffSeconds = diffMs / 1000
+                                
+                                // Calculamos minutos y segundos
+                                val minutesLeft = (diffSeconds / 60).coerceAtLeast(0).toInt()
+                                val secondsLeft = (diffSeconds % 60).coerceAtLeast(0).toInt()
+                                
+                                val formattedTime = if (diffSeconds <= 0) {
+                                    "Ahora"
+                                } else {
+                                    "${minutesLeft}m ${secondsLeft}s"
+                                }
+                                
+                                arrivals.add(
+                                    TrainArrival(
+                                        line = lineObj,
+                                        destination = destination,
+                                        minutesLeft = minutesLeft,
+                                        secondsLeft = secondsLeft,
+                                        platform = if (via != null) "Vía $via" else null,
+                                        timeLeftFormatted = formattedTime,
+                                        expectedArrivalEpochMs = tempsArribada
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         } catch (e: Exception) {
             // Silencioso
         }
 
         // Si no se obtuvieron predicciones reales, hacemos fallback a estimaciones programadas
         if (arrivals.isEmpty()) {
+            val currentMs = System.currentTimeMillis()
             when (stationId) {
-                "espanya" -> {
-                    arrivals.add(TrainArrival(lineL1, "Fondo", 2, "Vía 1 (Programado)"))
-                    arrivals.add(TrainArrival(lineL1, "Hospital de Bellvitge", 5, "Vía 2 (Programado)"))
+                "111" -> {
+                    arrivals.add(createFallbackArrival(lineL1, "Fondo", 1, 15, 1, currentMs))
                 }
-                "universitat" -> {
-                    arrivals.add(TrainArrival(lineL1, "Fondo", 3, "Vía 1 (Programado)"))
-                    arrivals.add(TrainArrival(lineL1, "Hospital de Bellvitge", 4, "Vía 2 (Programado)"))
+                "140" -> {
+                    arrivals.add(createFallbackArrival(lineL1, "Bellvitge", 2, 45, 2, currentMs))
                 }
                 else -> {
-                    arrivals.add(TrainArrival(lineL1, "Fondo", 3, "Vía 1 (Programado)"))
+                    arrivals.add(createFallbackArrival(lineL1, "Fondo", 2, 10, 1, currentMs))
+                    arrivals.add(createFallbackArrival(lineL1, "Bellvitge", 4, 35, 2, currentMs))
                 }
             }
         }
@@ -92,7 +173,27 @@ class RealTransportRepository(
             stationId = stationId,
             stationName = stationName,
             transportType = TransportType.METRO,
-            arrivals = arrivals.sortedBy { it.minutesLeft }.take(4)
+            arrivals = arrivals
+        )
+    }
+
+    private fun createFallbackArrival(
+        line: LineInfo,
+        destination: String,
+        fallbackMin: Int,
+        fallbackSec: Int,
+        via: Int,
+        currentMs: Long
+    ): TrainArrival {
+        val totalSecs = fallbackMin * 60 + fallbackSec
+        val expectedArrival = currentMs + (totalSecs * 1000)
+        return TrainArrival(
+            line = line,
+            destination = destination,
+            minutesLeft = fallbackMin,
+            secondsLeft = fallbackSec,
+            platform = "Vía $via (Programado)",
+            expectedArrivalEpochMs = expectedArrival
         )
     }
 
@@ -176,10 +277,7 @@ class RealTransportRepository(
 
     override suspend fun getAvailableStations(type: TransportType): List<Pair<String, String>> {
         return when (type) {
-            TransportType.METRO -> listOf(
-                "espanya" to "Espanya L1",
-                "universitat" to "Universitat L1"
-            )
+            TransportType.METRO -> STATIC_METRO_STATIONS
             TransportType.TRAIN_FGC -> listOf(
                 "pl_catalunya" to "Barcelona - Pl. Catalunya",
                 "pr" to "Provença",
@@ -204,10 +302,8 @@ class RealTransportRepository(
 
     private fun getStationName(stationId: String, type: TransportType): String {
         return when (type) {
-            TransportType.METRO -> when (stationId) {
-                "espanya" -> "Espanya"
-                "universitat" -> "Universitat"
-                else -> "Estación Metro"
+            TransportType.METRO -> {
+                staticMetroStationNames[stationId] ?: "Estación Metro"
             }
             TransportType.TRAIN_FGC -> when (stationId) {
                 "pl_catalunya" -> "Barcelona - Pl. Catalunya"

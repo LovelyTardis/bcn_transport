@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -52,9 +51,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -68,7 +65,9 @@ android {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation("com.google.android.gms:play-services-wearable:18.1.0")
+    implementation("com.google.android.gms:play-services-location:21.2.0")
     implementation("androidx.percentlayout:percentlayout:1.0.0")
     
     // Compose for Wear OS
@@ -92,3 +91,4 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling:1.6.2")
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.6.2")
 }
+

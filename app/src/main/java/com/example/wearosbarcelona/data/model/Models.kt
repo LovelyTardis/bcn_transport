@@ -15,7 +15,10 @@ data class TrainArrival(
     val line: LineInfo,
     val destination: String,
     val minutesLeft: Int,
-    val platform: String? = null
+    val platform: String? = null,
+    val secondsLeft: Int = 0,
+    val timeLeftFormatted: String? = null,
+    val expectedArrivalEpochMs: Long? = null
 )
 
 data class StationArrivals(
