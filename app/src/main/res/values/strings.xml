@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BCN Transport</string>
+    <string name="metro_tmb">Metro (TMB)</string>
+    <string name="train_fgc">Tren (FGC)</string>
+    <string name="loading">Cargando...</string>
+    <string name="error_loading">Error al cargar datos</string>
+    <string name="refresh">Actualizar</string>
+    <string name="minutes_abbr">min</string>
+    <string name="no_trains">No hay trenes programados</string>
+    <string name="no_metro">No hay metros programados</string>
+</resources>
