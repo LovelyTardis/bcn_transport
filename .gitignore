@@ -1,0 +1,12 @@
+# Local configuration
+.env
+
+# Android/Gradle template gitignore
+.gradle/
+/local.properties
+/build/
+/app/build/
+.idea/
+*.iml
+.DS_Store
+capture_video.ps1
