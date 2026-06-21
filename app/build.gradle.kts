@@ -1,6 +1,9 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -18,7 +21,7 @@ android {
         }
 
         // Load environmental variables from .env or .env.default
-        val envProperties = java.util.Properties()
+        val envProperties = Properties()
         val envFile = project.rootProject.file(".env")
         val defaultEnvFile = project.rootProject.file(".env.default")
         
@@ -55,9 +58,6 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
     }
     packaging {
         resources {
