@@ -4,7 +4,7 @@ import com.example.wearosbarcelona.data.model.StationArrivals
 import com.example.wearosbarcelona.data.model.TransportType
 
 val STATIC_METRO_STATIONS = listOf(
-    "111" to "Bellvitge",
+    "111" to "Hospital de Bellvitge",
     "112" to "Bellvitge",
     "113" to "Av. Carrilet",
     "114" to "Rambla Just Oliveras",

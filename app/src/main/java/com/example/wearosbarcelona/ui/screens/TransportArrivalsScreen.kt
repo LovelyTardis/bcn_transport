@@ -1,7 +1,5 @@
 package com.example.wearosbarcelona.ui.screens
 
-import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,18 +16,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,6 +40,7 @@ import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.dialog.Dialog
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
+import com.example.wearosbarcelona.ui.modifier.rotaryScroll
 import com.example.wearosbarcelona.data.model.TransportType
 import com.example.wearosbarcelona.ui.components.ArrivalRow
 import com.example.wearosbarcelona.ui.viewmodel.TransportViewModel
@@ -79,6 +72,7 @@ fun TransportArrivalsScreen(
 
     var showStationPicker by remember { mutableStateOf(false) }
     var initialCheckDone by remember { mutableStateOf(false) }
+    var locationLookupDone by rememberSaveable { mutableStateOf(false) }
 
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
@@ -96,17 +90,11 @@ fun TransportArrivalsScreen(
                     cancellationTokenSource.token
                 ).addOnSuccessListener { location ->
                     if (location != null) {
-                        val selectedName = viewModel.selectClosestStation(location.latitude, location.longitude, isMetro)
-                        if (selectedName != null) {
-                            Toast.makeText(context, "Cerca de: $selectedName", Toast.LENGTH_SHORT).show()
-                        }
+                        viewModel.selectClosestStation(location.latitude, location.longitude, isMetro)
                     } else {
                         fusedLocationClient.lastLocation.addOnSuccessListener { lastLoc ->
                             if (lastLoc != null) {
-                                val selectedName = viewModel.selectClosestStation(lastLoc.latitude, lastLoc.longitude, isMetro)
-                                if (selectedName != null) {
-                                    Toast.makeText(context, "Cerca de: $selectedName", Toast.LENGTH_SHORT).show()
-                                }
+                                viewModel.selectClosestStation(lastLoc.latitude, lastLoc.longitude, isMetro)
                             } else {
                                 Toast.makeText(context, "No se pudo obtener la localización", Toast.LENGTH_SHORT).show()
                             }
@@ -115,10 +103,7 @@ fun TransportArrivalsScreen(
                 }.addOnFailureListener {
                     fusedLocationClient.lastLocation.addOnSuccessListener { lastLoc ->
                         if (lastLoc != null) {
-                            val selectedName = viewModel.selectClosestStation(lastLoc.latitude, lastLoc.longitude, isMetro)
-                            if (selectedName != null) {
-                                Toast.makeText(context, "Cerca de: $selectedName", Toast.LENGTH_SHORT).show()
-                            }
+                            viewModel.selectClosestStation(lastLoc.latitude, lastLoc.longitude, isMetro)
                         } else {
                             Toast.makeText(context, "Error de localización", Toast.LENGTH_SHORT).show()
                         }
@@ -143,17 +128,11 @@ fun TransportArrivalsScreen(
                     cancellationTokenSource.token
                 ).addOnSuccessListener { location ->
                     if (location != null) {
-                        val selectedName = viewModel.selectClosestStation(location.latitude, location.longitude, isMetro)
-                        if (selectedName != null) {
-                            Toast.makeText(context, "Cerca de: $selectedName", Toast.LENGTH_SHORT).show()
-                        }
+                        viewModel.selectClosestStation(location.latitude, location.longitude, isMetro)
                     } else {
                         fusedLocationClient.lastLocation.addOnSuccessListener { lastLoc ->
                             if (lastLoc != null) {
-                                val selectedName = viewModel.selectClosestStation(lastLoc.latitude, lastLoc.longitude, isMetro)
-                                if (selectedName != null) {
-                                    Toast.makeText(context, "Cerca de: $selectedName", Toast.LENGTH_SHORT).show()
-                                }
+                                viewModel.selectClosestStation(lastLoc.latitude, lastLoc.longitude, isMetro)
                             } else {
                                 Toast.makeText(context, "No se pudo obtener la localización", Toast.LENGTH_SHORT).show()
                             }
@@ -162,10 +141,7 @@ fun TransportArrivalsScreen(
                 }.addOnFailureListener {
                     fusedLocationClient.lastLocation.addOnSuccessListener { lastLoc ->
                         if (lastLoc != null) {
-                            val selectedName = viewModel.selectClosestStation(lastLoc.latitude, lastLoc.longitude, isMetro)
-                            if (selectedName != null) {
-                                Toast.makeText(context, "Cerca de: $selectedName", Toast.LENGTH_SHORT).show()
-                            }
+                            viewModel.selectClosestStation(lastLoc.latitude, lastLoc.longitude, isMetro)
                         } else {
                             Toast.makeText(context, "Error de localización", Toast.LENGTH_SHORT).show()
                         }
@@ -185,9 +161,14 @@ fun TransportArrivalsScreen(
     }
 
     LaunchedEffect(Unit) {
+        if (locationLookupDone) {
+            initialCheckDone = true
+            return@LaunchedEffect
+        }
         val hasFine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         val hasCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
         if (hasFine || hasCoarse) {
+            locationLookupDone = true
             try {
                 // Try lastLocation first (instant)
                 fusedLocationClient.lastLocation.addOnCompleteListener { lastTask ->
@@ -240,6 +221,8 @@ fun TransportArrivalsScreen(
             currentTimeMs = System.currentTimeMillis()
         }
     }
+
+
 
 
 
@@ -453,25 +436,27 @@ fun TransportArrivalsScreen(
 
     // Diálogo de selección de estación
     val dialogListState = rememberScalingLazyListState()
-    val dialogFocusRequester = remember { FocusRequester() }
-    val dialogCoroutineScope = rememberCoroutineScope()
 
     Dialog(
         showDialog = showStationPicker,
         onDismissRequest = { showStationPicker = false },
         scrollState = dialogListState
     ) {
+        val dialogFocusRequester = remember { FocusRequester() }
+
+        LaunchedEffect(Unit) {
+            val stationIndex = stations.indexOfFirst { it.first == selectedStation }
+            if (stationIndex >= 0) {
+                dialogListState.scrollToItem(stationIndex + 1, 0)
+            }
+            kotlinx.coroutines.delay(100L) // Esperar a que la ventana se adjunte y active
+            dialogFocusRequester.requestFocus()
+        }
+
         ScalingLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .onRotaryScrollEvent {
-                    dialogCoroutineScope.launch {
-                        dialogListState.scrollBy(it.verticalScrollPixels)
-                    }
-                    true
-                }
-                .focusRequester(dialogFocusRequester)
-                .focusable(),
+                .rotaryScroll(dialogListState, dialogFocusRequester),
             state = dialogListState,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -513,16 +498,6 @@ fun TransportArrivalsScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
-            }
-        }
-
-        LaunchedEffect(showStationPicker) {
-            if (showStationPicker) {
-                val stationIndex = stations.indexOfFirst { it.first == selectedStation }
-                if (stationIndex >= 0) {
-                    dialogListState.scrollToItem(stationIndex + 1, 0)
-                }
-                dialogFocusRequester.requestFocus()
             }
         }
     }

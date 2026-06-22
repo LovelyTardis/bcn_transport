@@ -65,8 +65,7 @@ fun ArrivalRow(arrival: TrainArrival, currentTimeMs: Long = System.currentTimeMi
             
             val bottomText = remember(arrival.destination) {
                 val rawDest = arrival.destination
-                val dest = if (rawDest.equals("Hospital de Bellvitge", ignoreCase = true)) "Bellvitge" else rawDest
-                dest
+                rawDest
                     .replace("í", "i")
                     .replace("Í", "I")
                     .replace("á", "a")

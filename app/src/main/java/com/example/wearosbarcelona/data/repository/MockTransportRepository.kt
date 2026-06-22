@@ -21,7 +21,7 @@ class MockTransportRepository : TransportRepository {
     )
 
     private val staticMetroStationNames = mapOf(
-        "111" to "Bellvitge",
+        "111" to "Hospital de Bellvitge",
         "112" to "Bellvitge",
         "113" to "Av. Carrilet",
         "114" to "Rambla Just Oliveras",
@@ -98,7 +98,7 @@ class MockTransportRepository : TransportRepository {
             arrivals.add(
                 TrainArrival(
                     line = lineL1,
-                    destination = "Bellvitge",
+                    destination = "Hospital de Bellvitge",
                     minutesLeft = nextTrainSecs2 / 60,
                     secondsLeft = nextTrainSecs2 % 60,
                     platform = "Vía 2",
@@ -125,7 +125,7 @@ class MockTransportRepository : TransportRepository {
             arrivals.add(
                 TrainArrival(
                     line = lineL1,
-                    destination = "Bellvitge",
+                    destination = "Hospital de Bellvitge",
                     minutesLeft = nextTrainSecs2 / 60,
                     secondsLeft = nextTrainSecs2 % 60,
                     platform = "Vía 2",

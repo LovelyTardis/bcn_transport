@@ -41,18 +41,20 @@ class MainActivity : ComponentActivity() {
         
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        val hasFine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        val hasCoarse = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        
-        if (hasFine || hasCoarse) {
-            fetchLocationAndPreSelect()
-        } else {
-            requestPermissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
+        if (savedInstanceState == null) {
+            val hasFine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            val hasCoarse = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            
+            if (hasFine || hasCoarse) {
+                fetchLocationAndPreSelect()
+            } else {
+                requestPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
                 )
-            )
+            }
         }
         setContent {
             WearOSBarcelonaTheme {
@@ -65,9 +67,7 @@ class MainActivity : ComponentActivity() {
                     composable("main") {
                         MainScreen(
                             onNavigateToMetro = { navController.navigate("metro") },
-                            onNavigateToFgc = { navController.navigate("fgc") },
-                            isMockMode = viewModel.isMockMode,
-                            onToggleMockMode = { viewModel.toggleMockMode() }
+                            onNavigateToFgc = { navController.navigate("fgc") }
                         )
                     }
                     

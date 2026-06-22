@@ -48,7 +48,7 @@ class RealTransportRepository(
     }
 
     private val staticMetroStationNames = mapOf(
-        "111" to "Bellvitge",
+        "111" to "Hospital de Bellvitge",
         "112" to "Bellvitge",
         "113" to "Av. Carrilet",
         "114" to "Rambla Just Oliveras",
@@ -160,11 +160,11 @@ class RealTransportRepository(
                     arrivals.add(createFallbackArrival(lineL1, "Fondo", 1, 15, 1, currentMs))
                 }
                 "140" -> {
-                    arrivals.add(createFallbackArrival(lineL1, "Bellvitge", 2, 45, 2, currentMs))
+                    arrivals.add(createFallbackArrival(lineL1, "Hospital de Bellvitge", 2, 45, 2, currentMs))
                 }
                 else -> {
                     arrivals.add(createFallbackArrival(lineL1, "Fondo", 2, 10, 1, currentMs))
-                    arrivals.add(createFallbackArrival(lineL1, "Bellvitge", 4, 35, 2, currentMs))
+                    arrivals.add(createFallbackArrival(lineL1, "Hospital de Bellvitge", 4, 35, 2, currentMs))
                 }
             }
         }

@@ -44,9 +44,6 @@ class TransportViewModel : ViewModel() {
     // Por defecto, si no hay credenciales de TMB, usamos el MockRepository para que funcione al instante
     private var activeRepository: TransportRepository = mockRepository
 
-    var isMockMode by mutableStateOf(true)
-        private set
-
     init {
         // Inicializar servicios reales solo si hay credenciales
         if (tmbAppId.isNotEmpty() && tmbAppKey.isNotEmpty()) {
@@ -75,11 +72,9 @@ class TransportViewModel : ViewModel() {
                 realRepository = RealTransportRepository(tmbService, fgcService, tmbAppId, tmbAppKey)
                 // Opcional: Descomentar la siguiente línea para activar el modo Real por defecto si hay claves
                 activeRepository = realRepository!!
-                isMockMode = false
             } catch (e: Exception) {
                 // Si falla la inicialización de red, mantén el repositorio mock
                 activeRepository = mockRepository
-                isMockMode = true
             }
         }
         loadStationsList()
@@ -220,27 +215,4 @@ class TransportViewModel : ViewModel() {
         }
     }
 
-    fun toggleMockMode() {
-        val targetMock = !isMockMode
-        if (targetMock) {
-            activeRepository = mockRepository
-            isMockMode = true
-            loadStationsList()
-            selectedMetroStation = "122"
-            selectedFgcStation = "pl_catalunya"
-            refreshMetroArrivals()
-            refreshFgcArrivals()
-        } else {
-            val real = realRepository
-            if (real != null) {
-                activeRepository = real
-                isMockMode = false
-                loadStationsList()
-                selectedMetroStation = "122"
-                selectedFgcStation = "pl_catalunya"
-                refreshMetroArrivals()
-                refreshFgcArrivals()
-            }
-        }
-    }
 }
